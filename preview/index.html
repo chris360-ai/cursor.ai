@@ -1,0 +1,846 @@
+<title>Three Roblox UI Libraries — Specimen Sheet</title>
+
+<style>
+  /* ============================================================
+     PAGE CHROME TOKENS
+     The specimens carry all the colour. The sheet around them
+     stays achromatic with a cool bias so nothing competes.
+     ============================================================ */
+  :root {
+    --ground:  #E6E7EB;
+    --surface: #F3F4F7;
+    --ink:     #15161A;
+    --ink-dim: #5B5F68;
+    --ink-faint:#8A8E97;
+    --rule:    #C8CBD2;
+    --rule-soft:#D8DAE0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:  #121317;
+      --surface: #1A1C21;
+      --ink:     #E9EAEE;
+      --ink-dim: #9297A1;
+      --ink-faint:#6A6F79;
+      --rule:    #2B2E35;
+      --rule-soft:#232630;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:  #121317;
+    --surface: #1A1C21;
+    --ink:     #E9EAEE;
+    --ink-dim: #9297A1;
+    --ink-faint:#6A6F79;
+    --rule:    #2B2E35;
+    --rule-soft:#232630;
+  }
+  :root[data-theme="light"] {
+    --ground:  #E6E7EB;
+    --surface: #F3F4F7;
+    --ink:     #15161A;
+    --ink-dim: #5B5F68;
+    --ink-faint:#8A8E97;
+    --rule:    #C8CBD2;
+    --rule-soft:#D8DAE0;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+  }
+
+  /* ---------- masthead ---------- */
+  .mast { border-bottom: 2px solid var(--ink); padding-bottom: 18px; }
+  .mast h1 {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: clamp(28px, 5vw, 46px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    margin: 0 0 10px;
+    text-wrap: balance;
+  }
+  .mast p {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--ink-dim);
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 26px;
+    margin-top: 18px;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  /* ---------- specimen block ---------- */
+  .spec { margin-top: 64px; }
+
+  .spec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 12px;
+  }
+  .spec-name {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .spec-file {
+    color: var(--ink-faint);
+    font-size: 12px;
+  }
+  .spec-tag {
+    margin-left: auto;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+
+  .spec-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 2px;
+    background: var(--rule-soft);
+    border: 1px solid var(--rule-soft);
+    margin: 20px 0 22px;
+  }
+  .fact { background: var(--surface); padding: 11px 13px; }
+  .fact dt {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0 0 3px;
+  }
+  .fact dd { margin: 0; font-size: 12.5px; }
+
+  /* swatch strip */
+  .swatches { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 22px; }
+  .sw { flex: 1 1 96px; min-width: 96px; }
+  .sw-chip { height: 40px; border: 1px solid rgba(128,128,128,.28); }
+  .sw-meta { padding: 5px 1px 0; }
+  .sw-name {
+    font-size: 9.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .sw-hex { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ink-dim); }
+
+  /* mockup frame */
+  .stage {
+    overflow-x: auto;
+    background-image: repeating-linear-gradient(
+      45deg, transparent, transparent 7px,
+      color-mix(in srgb, var(--ink) 5%, transparent) 7px,
+      color-mix(in srgb, var(--ink) 5%, transparent) 8px);
+    background-color: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 28px;
+  }
+  .stage-inner { display: flex; justify-content: center; min-width: max-content; }
+
+  .caption {
+    margin-top: 9px;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.03em;
+  }
+
+  /* ============================================================
+     SHARED MOCKUP PRIMITIVES
+     Every .ui-* below reproduces the real Lua output at 1:1 px.
+     ============================================================ */
+  .win {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.35;
+    user-select: none;
+    box-shadow: 0 18px 44px rgba(0,0,0,.34);
+    flex: none;
+  }
+  .win .row { display: flex; align-items: center; }
+
+  /* ---------- OBSIDIAN ---------- */
+  .obs {
+    width: 700px; height: 470px;
+    background: #08090B;
+    border: 1px solid #2A3038;
+    border-radius: 4px;
+    color: #D6DCE4;
+    position: relative;
+    overflow: hidden;
+  }
+  .obs .bar { height: 34px; display: flex; align-items: center; padding: 0 12px 0 14px; }
+  .obs .brand { font-weight: 700; font-size: 13px; }
+  .obs .brand span { color: #35D6E8; }
+  .obs .wbtns { margin-left: auto; display: flex; gap: 14px; color: #7C8591; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  .obs .hr { height: 1px; background: #1E2228; }
+  .obs .body { display: flex; height: calc(100% - 35px); }
+  .obs .side { width: 132px; padding: 10px 8px; border-right: 1px solid #1E2228; flex: none; }
+  .obs .tab {
+    height: 28px; display: flex; align-items: center; padding-left: 12px;
+    color: #7C8591; border-radius: 3px; margin-bottom: 2px; position: relative;
+  }
+  .obs .tab.on { background: #121519; color: #D6DCE4; }
+  .obs .tab.on::before {
+    content: ""; position: absolute; left: 0; top: 6px;
+    width: 2px; height: 16px; background: #35D6E8; border-radius: 1px;
+  }
+  .obs .cols { display: flex; gap: 10px; padding: 12px; flex: 1; min-width: 0; }
+  .obs .col { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .obs .gb {
+    background: #0D0F12; border: 1px solid #1E2228; border-radius: 3px;
+    padding: 14px 10px 10px; position: relative;
+  }
+  .obs .gb > .gt {
+    position: absolute; top: -6px; left: 9px; background: #0D0F12;
+    padding: 0 4px; font-size: 11px; color: #7C8591; font-weight: 500;
+  }
+  .obs .lbl { color: #4E5660; font-size: 12px; margin-bottom: 4px; }
+  .obs .tg { display: flex; align-items: center; gap: 8px; height: 18px; margin-bottom: 4px; color: #7C8591; }
+  .obs .tg i {
+    width: 13px; height: 13px; border: 1px solid #2A3038; background: #121519;
+    border-radius: 2px; display: grid; place-items: center; flex: none;
+  }
+  .obs .tg.on { color: #D6DCE4; }
+  .obs .tg.on i::after { content: ""; width: 7px; height: 7px; background: #35D6E8; border-radius: 1px; }
+  .obs .sl { margin-bottom: 4px; }
+  .obs .sl .t { display: flex; justify-content: space-between; color: #7C8591; }
+  .obs .sl .t b { font-family: ui-monospace, Menlo, monospace; font-weight: 400; font-size: 11px; color: #D6DCE4; }
+  .obs .sl .tr { height: 4px; background: #121519; border-radius: 2px; margin-top: 7px; }
+  .obs .sl .tr i { display: block; height: 100%; background: #35D6E8; border-radius: 2px; }
+  .obs .btn {
+    height: 24px; background: #121519; border: 1px solid #1E2228; border-radius: 3px;
+    display: grid; place-items: center; color: #7C8591; margin-bottom: 4px;
+  }
+  .obs .in { margin-bottom: 4px; }
+  .obs .in .f {
+    height: 20px; background: #121519; border: 1px solid #1E2228; border-radius: 3px;
+    display: flex; align-items: center; padding: 0 7px; margin-top: 3px;
+    font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #D6DCE4;
+  }
+  .obs .in .f.ph { color: #4E5660; }
+  .obs .in .f .ar { margin-left: auto; color: #7C8591; }
+  .obs .kb { display: flex; align-items: center; height: 20px; color: #7C8591; }
+  .obs .kb b {
+    margin-left: auto; font-weight: 400; font-family: ui-monospace, Menlo, monospace;
+    font-size: 10px; background: #121519; border: 1px solid #1E2228; border-radius: 2px;
+    padding: 2px 8px; color: #7C8591;
+  }
+
+  /* ---------- AMETHYST ---------- */
+  .ame {
+    width: 720px; height: 490px;
+    background: #0C0A12;
+    border: 1px solid #282237;
+    border-radius: 12px;
+    color: #E8E4F0;
+    overflow: hidden;
+  }
+  .ame .head { height: 52px; display: flex; align-items: center; padding: 0 14px 0 18px; }
+  .ame .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: linear-gradient(135deg, #8B5CF6, #D946EF); flex: none;
+  }
+  .ame .ttl { margin-left: 16px; }
+  .ame .ttl b { display: block; font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+  .ame .ttl small { display: block; font-size: 11px; color: #67607A; }
+  .ame .wbtns { margin-left: auto; display: flex; gap: 16px; color: #968EAA; font-size: 15px; }
+  .ame .tabs { display: flex; gap: 4px; padding: 0 18px; height: 34px; align-items: center; position: relative; }
+  .ame .tabs span { padding: 0 14px; color: #968EAA; font-size: 13px; font-weight: 500; }
+  .ame .tabs span.on { color: #E8E4F0; }
+  .ame .ul { height: 2px; background: linear-gradient(90deg, #8B5CF6, #D946EF); border-radius: 1px; margin: 0 18px; }
+  .ame .hr { height: 1px; background: #282237; }
+  .ame .cols { display: flex; gap: 14px; padding: 16px 18px; }
+  .ame .col { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .ame .ch { display: flex; align-items: center; gap: 8px; height: 16px; margin-bottom: 8px; }
+  .ame .ch i { width: 3px; height: 12px; border-radius: 2px; background: linear-gradient(180deg, #8B5CF6, #D946EF); }
+  .ame .ch span { font-size: 12px; color: #968EAA; font-weight: 500; }
+  .ame .card { background: #191623; border: 1px solid #282237; border-radius: 8px; padding: 12px; }
+  .ame .lbl { color: #67607A; font-size: 12px; margin-bottom: 6px; }
+  .ame .tg { display: flex; align-items: center; height: 24px; margin-bottom: 6px; color: #968EAA; font-size: 13px; }
+  .ame .tg .sw2 {
+    margin-left: auto; width: 34px; height: 18px; border-radius: 9px;
+    background: #211C2E; position: relative; flex: none;
+  }
+  .ame .tg .sw2::after {
+    content: ""; position: absolute; top: 3px; left: 3px;
+    width: 12px; height: 12px; border-radius: 50%; background: #B4ACC8;
+  }
+  .ame .tg.on { color: #E8E4F0; }
+  .ame .tg.on .sw2 { background: linear-gradient(90deg, #8B5CF6, #D946EF); }
+  .ame .tg.on .sw2::after { left: 19px; background: #fff; }
+  .ame .sl { margin-bottom: 6px; }
+  .ame .sl .t { display: flex; align-items: center; color: #968EAA; font-size: 13px; }
+  .ame .sl .t b {
+    margin-left: auto; font-weight: 400; font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px; background: #211C2E; border-radius: 5px; padding: 2px 10px; color: #E8E4F0;
+  }
+  .ame .sl .tr { height: 6px; background: #211C2E; border-radius: 3px; margin-top: 8px; position: relative; }
+  .ame .sl .tr i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8B5CF6, #D946EF); }
+  .ame .sl .tr u {
+    position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; transform: translate(-50%, -50%);
+  }
+  .ame .btn {
+    height: 30px; background: #211C2E; border: 1px solid #282237; border-radius: 6px;
+    display: grid; place-items: center; color: #968EAA; font-size: 12px; font-weight: 500; margin-bottom: 6px;
+  }
+  .ame .btn.hot { background: linear-gradient(90deg, rgba(139,92,246,.20), rgba(217,70,239,.20)); color: #E8E4F0; }
+  .ame .in { margin-bottom: 6px; }
+  .ame .in .f {
+    height: 24px; background: #211C2E; border: 1px solid #282237; border-radius: 6px;
+    display: flex; align-items: center; padding: 0 10px; margin-top: 4px; font-size: 12px;
+  }
+  .ame .in .f.ph { color: #67607A; }
+  .ame .in .f .ar { margin-left: auto; color: #968EAA; font-size: 11px; }
+  .ame .kb { display: flex; align-items: center; height: 24px; color: #968EAA; font-size: 13px; }
+  .ame .kb b {
+    margin-left: auto; font-weight: 400; font-family: ui-monospace, Menlo, monospace;
+    font-size: 11px; background: #211C2E; border: 1px solid #282237; border-radius: 5px;
+    padding: 2px 12px; color: #968EAA;
+  }
+
+  /* ---------- EMBER ---------- */
+  .emb {
+    width: 690px; height: 500px;
+    background: #0B0A09;
+    border: 1px solid #403934;
+    border-radius: 6px;
+    color: #E4DED6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow: hidden;
+  }
+  .emb .head { height: 44px; display: flex; align-items: center; padding: 0 14px 0 16px; }
+  .emb .head i { width: 4px; height: 16px; background: #FF9A3C; border-radius: 1px; flex: none; }
+  .emb .head b {
+    margin-left: 12px; font-family: ui-sans-serif, system-ui, "Segoe UI", Arial, sans-serif;
+    font-size: 18px; font-weight: 600; letter-spacing: 0.06em;
+  }
+  .emb .wbtns { margin-left: auto; display: flex; gap: 16px; color: #928980; font-size: 13px; }
+  .emb .nav {
+    margin: 4px 16px 0; height: 30px; background: #131110; border: 1px solid #2E2926;
+    border-radius: 5px; display: flex; align-items: center; gap: 3px; padding: 3px;
+  }
+  .emb .nav span { padding: 0 16px; height: 100%; display: grid; place-items: center; border-radius: 4px; color: #928980; font-size: 11px; }
+  .emb .nav span.on { background: #FF9A3C; color: #140E08; }
+  .emb .cols { display: flex; gap: 12px; padding: 10px 16px 0; }
+  .emb .col { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .emb .gh { display: flex; align-items: center; gap: 7px; height: 14px; margin-bottom: 7px; }
+  .emb .gh i { width: 6px; height: 6px; background: #FF9A3C; border-radius: 1px; flex: none; }
+  .emb .gh span { font-size: 10px; color: #928980; letter-spacing: 0.05em; }
+  .emb .gh u { flex: 1; height: 1px; background: #2E2926; }
+  .emb .gb { background: #181514; border: 1px solid #2E2926; border-radius: 5px; padding: 11px; }
+  .emb .lbl { color: #615A54; font-size: 11px; margin-bottom: 5px; }
+  .emb .tg { display: flex; align-items: center; gap: 9px; height: 19px; margin-bottom: 5px; color: #928980; font-size: 11px; }
+  .emb .tg i {
+    width: 14px; height: 14px; border: 1px solid #403934; background: #211D1B;
+    border-radius: 3px; display: grid; place-items: center; flex: none;
+  }
+  .emb .tg.on { color: #E4DED6; }
+  .emb .tg.on i { background: #FF9A3C; border-color: #FF9A3C; color: #140E08; }
+  .emb .tg.on i::after { content: "x"; font-size: 10px; line-height: 1; }
+  .emb .sl { margin-bottom: 5px; }
+  .emb .sl .t { display: flex; justify-content: space-between; color: #928980; font-size: 11px; }
+  .emb .sl .t b { font-weight: 400; color: #FFCF6B; }
+  .emb .sl .tr { height: 5px; background: #211D1B; border-radius: 2px; margin-top: 7px; position: relative; }
+  .emb .sl .tr i { display: block; height: 100%; background: #FF9A3C; border-radius: 2px; }
+  .emb .sl .tr u {
+    position: absolute; top: 50%; width: 3px; height: 11px; background: #FFCF6B;
+    border-radius: 1px; transform: translate(-50%, -50%);
+  }
+  .emb .btn {
+    height: 26px; background: #211D1B; border: 1px solid #2E2926; border-radius: 4px;
+    display: grid; place-items: center; color: #928980; font-size: 11px; margin-bottom: 5px;
+  }
+  .emb .btn.hot { background: #FF9A3C; border-color: #FF9A3C; color: #140E08; }
+  .emb .in { margin-bottom: 5px; }
+  .emb .in .f {
+    height: 22px; background: #211D1B; border: 1px solid #2E2926; border-radius: 4px;
+    display: flex; align-items: center; gap: 8px; padding: 0 9px; margin-top: 3px; font-size: 11px;
+  }
+  .emb .in .f em { color: #615A54; font-style: normal; }
+  .emb .in .f.ph span { color: #615A54; }
+  .emb .in .f .ar { margin-left: auto; color: #928980; }
+  .emb .kb { display: flex; align-items: center; height: 20px; color: #928980; font-size: 11px; }
+  .emb .kb b {
+    margin-left: auto; font-weight: 400; font-size: 10px; background: #211D1B;
+    border: 1px solid #2E2926; border-radius: 3px; padding: 2px 10px;
+  }
+  .emb .foot {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 27px;
+    border-top: 1px solid #2E2926; display: flex; align-items: center;
+    padding: 0 16px; font-size: 10px; color: #615A54;
+  }
+  .emb .foot i { width: 6px; height: 6px; border-radius: 50%; background: #FF9A3C; margin-right: 12px; flex: none; }
+  .emb .foot u { margin-left: auto; text-decoration: none; font-variant-numeric: tabular-nums; }
+  .emb-wrap { position: relative; }
+
+  /* ---------- loader specimens ---------- */
+  .loaders {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 22px;
+  }
+  .ld { box-shadow: 0 10px 30px rgba(0,0,0,.3); }
+
+  .ld-obs {
+    background: #08090B; border: 1px solid #2A3038; border-radius: 4px;
+    padding: 26px 24px 24px; text-align: center; color: #D6DCE4;
+    font-family: ui-sans-serif, system-ui, Arial, sans-serif;
+  }
+  .ld-obs h4 { margin: 0 0 8px; font-size: 21px; font-weight: 700; }
+  .ld-obs h4 span { color: #35D6E8; }
+  .ld-obs .sub { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #7C8591; }
+  .ld-obs .rule { height: 1px; background: #1E2228; margin: 14px 0; }
+  .ld-obs .st { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #4E5660; }
+  .ld-obs .bar { height: 3px; background: #121519; border-radius: 2px; margin: 12px 0 16px; }
+  .ld-obs .bar i { display: block; height: 100%; width: 55%; background: #35D6E8; border-radius: 2px; }
+  .ld-obs .go {
+    height: 30px; background: #121519; border: 1px solid #2A3038; border-radius: 3px;
+    display: grid; place-items: center; font-size: 12px; font-weight: 500; letter-spacing: .18em;
+  }
+
+  .ld-ame {
+    background: #0C0A12; border: 1px solid #282237; border-radius: 14px;
+    text-align: center; color: #E8E4F0; overflow: hidden;
+    font-family: ui-sans-serif, system-ui, Arial, sans-serif;
+  }
+  .ld-ame .strip { height: 3px; background: linear-gradient(90deg, #8B5CF6, #D946EF); }
+  .ld-ame .pad { padding: 24px 24px 22px; }
+  .ld-ame h4 { margin: 0 0 6px; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+  .ld-ame .sub { font-size: 13px; color: #968EAA; }
+  .ld-ame .strow { display: flex; justify-content: space-between; font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: #67607A; margin-top: 18px; }
+  .ld-ame .strow b { font-weight: 400; color: #E8E4F0; }
+  .ld-ame .bar { height: 5px; background: #211C2E; border-radius: 3px; margin: 8px 0 16px; }
+  .ld-ame .bar i { display: block; height: 100%; width: 55%; border-radius: 3px; background: linear-gradient(90deg, #8B5CF6, #D946EF); }
+  .ld-ame .go {
+    height: 36px; border-radius: 8px; display: grid; place-items: center;
+    font-size: 13px; font-weight: 700; letter-spacing: .06em;
+    background: linear-gradient(90deg, rgba(139,92,246,.30), rgba(217,70,239,.30));
+  }
+
+  .ld-emb {
+    background: #0B0A09; border: 1px solid #403934; border-radius: 6px;
+    color: #E4DED6; overflow: hidden; display: flex;
+    font-family: ui-monospace, Menlo, monospace;
+  }
+  .ld-emb .stripe { width: 3px; background: #FF9A3C; flex: none; }
+  .ld-emb .pad { padding: 22px 22px 20px; flex: 1; min-width: 0; }
+  .ld-emb h4 {
+    margin: 0 0 6px; font-family: ui-sans-serif, system-ui, Arial, sans-serif;
+    font-size: 26px; font-weight: 600; letter-spacing: .06em;
+  }
+  .ld-emb .sub { font-size: 11px; color: #928980; }
+  .ld-emb .log { margin: 14px 0 0; font-size: 10px; color: #615A54; }
+  .ld-emb .log div { margin-bottom: 3px; }
+  .ld-emb .log div.now { color: #FF9A3C; }
+  .ld-emb .bar { height: 4px; background: #211D1B; border-radius: 2px; margin: 12px 0 14px; }
+  .ld-emb .bar i { display: block; height: 100%; width: 55%; background: #FF9A3C; border-radius: 2px; }
+  .ld-emb .go {
+    height: 32px; background: #FF9A3C; color: #140E08; border-radius: 4px;
+    display: grid; place-items: center; font-size: 12px;
+  }
+
+  /* ---------- closing ---------- */
+  .foot-note {
+    margin-top: 72px; padding-top: 20px; border-top: 2px solid var(--ink);
+    color: var(--ink-dim); max-width: 66ch;
+  }
+  .foot-note p { margin: 0; }
+  .foot-note p + p { margin-top: 14px; }
+  .foot-note code {
+    background: var(--surface); border: 1px solid var(--rule-soft);
+    padding: 1px 5px; font-size: 12px;
+  }
+  .foot-note h3 {
+    font-family: ui-sans-serif, system-ui, Arial, sans-serif;
+    font-size: 15px; font-weight: 700; color: var(--ink); margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+
+  @media (max-width: 640px) {
+    .sheet { padding: 34px 16px 64px; }
+    .stage { padding: 14px; }
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="mast">
+    <h1>Three interface libraries</h1>
+    <p>
+      Standalone Roblox UI shells, each with its own identity. Reproduced here at
+      1:1 pixel scale from the Lua source so the palettes, type sizes and component
+      geometry can be compared before anything is executed.
+    </p>
+    <div class="meta-row">
+      <span>3 libraries</span>
+      <span>9 element types each</span>
+      <span>No external assets</span>
+      <span>Live retinting</span>
+    </div>
+  </header>
+
+  <!-- ================= OBSIDIAN ================= -->
+  <section class="spec">
+    <div class="spec-head">
+      <span class="spec-name">Obsidian</span>
+      <span class="spec-file">obsidian.lua</span>
+      <span class="spec-tag">Dense · technical</span>
+    </div>
+
+    <dl class="spec-facts">
+      <div class="fact"><dt>Accent</dt><dd>Ice cyan</dd></div>
+      <div class="fact"><dt>Navigation</dt><dd>Vertical sidebar</dd></div>
+      <div class="fact"><dt>Corner radius</dt><dd>3 px</dd></div>
+      <div class="fact"><dt>Fonts</dt><dd>Gotham · Code</dd></div>
+      <div class="fact"><dt>Toggle key</dt><dd>RightShift</dd></div>
+    </dl>
+
+    <div class="swatches">
+      <div class="sw"><div class="sw-chip" style="background:#08090B"></div><div class="sw-meta"><div class="sw-name">Background</div><div class="sw-hex">#08090B</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#0D0F12"></div><div class="sw-meta"><div class="sw-name">Panel</div><div class="sw-hex">#0D0F12</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#121519"></div><div class="sw-meta"><div class="sw-name">Element</div><div class="sw-hex">#121519</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#1E2228"></div><div class="sw-meta"><div class="sw-name">Border</div><div class="sw-hex">#1E2228</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#35D6E8"></div><div class="sw-meta"><div class="sw-name">Accent</div><div class="sw-hex">#35D6E8</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#D6DCE4"></div><div class="sw-meta"><div class="sw-name">Text</div><div class="sw-hex">#D6DCE4</div></div></div>
+    </div>
+
+    <div class="stage"><div class="stage-inner">
+      <div class="win obs">
+        <div class="bar">
+          <div class="brand">obsidian<span>.ui</span></div>
+          <div class="wbtns"><span>&minus;</span><span>x</span></div>
+        </div>
+        <div class="hr"></div>
+        <div class="body">
+          <div class="side">
+            <div class="tab on">Home</div>
+            <div class="tab">Interface</div>
+            <div class="tab">Theme</div>
+            <div class="tab">Settings</div>
+          </div>
+          <div class="cols">
+            <div class="col">
+              <div class="gb">
+                <div class="gt">Overview</div>
+                <div class="lbl">A dense, technical interface library.</div>
+                <div class="lbl">Hairline borders, inset group titles.</div>
+                <div class="btn">Send test notification</div>
+              </div>
+              <div class="gb">
+                <div class="gt">Session</div>
+                <div class="lbl">user&nbsp;&nbsp; Builderman</div>
+                <div class="lbl">place&nbsp; 4483381587</div>
+              </div>
+            </div>
+            <div class="col">
+              <div class="gb">
+                <div class="gt">Elements</div>
+                <div class="tg on"><i></i>Example toggle</div>
+                <div class="tg"><i></i>Second toggle</div>
+                <div class="sl">
+                  <div class="t"><span>Example slider</span><b>42%</b></div>
+                  <div class="tr"><i style="width:42%"></i></div>
+                </div>
+                <div class="sl">
+                  <div class="t"><span>Decimal slider</span><b>1.25 x</b></div>
+                  <div class="tr"><i style="width:25%"></i></div>
+                </div>
+                <div class="kb"><span>Example keybind</span><b>F</b></div>
+              </div>
+              <div class="gb">
+                <div class="gt">Inputs</div>
+                <div class="in">
+                  <div class="lbl" style="margin:0">Example dropdown</div>
+                  <div class="f">Alpha<span class="ar">+</span></div>
+                </div>
+                <div class="in">
+                  <div class="lbl" style="margin:0">Example textbox</div>
+                  <div class="f ph">type here...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <p class="caption">Group titles sit on the border line and mask it — the ImGui detail from your references.</p>
+  </section>
+
+  <!-- ================= AMETHYST ================= -->
+  <section class="spec">
+    <div class="spec-head">
+      <span class="spec-name">Amethyst</span>
+      <span class="spec-file">amethyst.lua</span>
+      <span class="spec-tag">Soft · modern</span>
+    </div>
+
+    <dl class="spec-facts">
+      <div class="fact"><dt>Accent</dt><dd>Violet → magenta</dd></div>
+      <div class="fact"><dt>Navigation</dt><dd>Top tabs, sliding underline</dd></div>
+      <div class="fact"><dt>Corner radius</dt><dd>6–12 px</dd></div>
+      <div class="fact"><dt>Fonts</dt><dd>Gotham · RobotoMono</dd></div>
+      <div class="fact"><dt>Toggle key</dt><dd>RightControl</dd></div>
+    </dl>
+
+    <div class="swatches">
+      <div class="sw"><div class="sw-chip" style="background:#0C0A12"></div><div class="sw-meta"><div class="sw-name">Background</div><div class="sw-hex">#0C0A12</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#191623"></div><div class="sw-meta"><div class="sw-name">Card</div><div class="sw-hex">#191623</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#211C2E"></div><div class="sw-meta"><div class="sw-name">Element</div><div class="sw-hex">#211C2E</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#282237"></div><div class="sw-meta"><div class="sw-name">Border</div><div class="sw-hex">#282237</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:linear-gradient(90deg,#8B5CF6,#D946EF)"></div><div class="sw-meta"><div class="sw-name">Accent</div><div class="sw-hex">#8B5CF6→#D946EF</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#E8E4F0"></div><div class="sw-meta"><div class="sw-name">Text</div><div class="sw-hex">#E8E4F0</div></div></div>
+    </div>
+
+    <div class="stage"><div class="stage-inner">
+      <div class="win ame">
+        <div class="head">
+          <div class="dot"></div>
+          <div class="ttl"><b>Amethyst</b><small>interface library · v1.0</small></div>
+          <div class="wbtns"><span>&ndash;</span><span>&times;</span></div>
+        </div>
+        <div class="tabs">
+          <span class="on">Home</span><span>Components</span><span>Theme</span><span>Settings</span>
+        </div>
+        <div class="ul" style="width:78px"></div>
+        <div class="hr"></div>
+        <div class="cols">
+          <div class="col">
+            <div>
+              <div class="ch"><i></i><span>Overview</span></div>
+              <div class="card">
+                <div class="lbl">A soft, modern interface library.</div>
+                <div class="lbl">Rounded cards, gradient accents.</div>
+                <div class="btn hot">Send test notification</div>
+              </div>
+            </div>
+            <div>
+              <div class="ch"><i></i><span>Session</span></div>
+              <div class="card">
+                <div class="lbl">User&nbsp;&nbsp;&nbsp; Builderman</div>
+                <div class="lbl">Place&nbsp;&nbsp; 4483381587</div>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div>
+              <div class="ch"><i></i><span>Elements</span></div>
+              <div class="card">
+                <div class="tg on">Example toggle<div class="sw2"></div></div>
+                <div class="tg">Second toggle<div class="sw2"></div></div>
+                <div class="sl">
+                  <div class="t"><span>Example slider</span><b>65%</b></div>
+                  <div class="tr"><i style="width:65%"></i><u style="left:65%"></u></div>
+                </div>
+                <div class="sl">
+                  <div class="t"><span>Decimal slider</span><b>2.5x</b></div>
+                  <div class="tr"><i style="width:50%"></i><u style="left:50%"></u></div>
+                </div>
+                <div class="kb"><span>Example keybind</span><b>G</b></div>
+              </div>
+            </div>
+            <div>
+              <div class="ch"><i></i><span>Selection</span></div>
+              <div class="card">
+                <div class="in">
+                  <div class="lbl" style="margin:0">Single select</div>
+                  <div class="f">Alpha<span class="ar">v</span></div>
+                </div>
+                <div class="in">
+                  <div class="lbl" style="margin:0">Example textbox</div>
+                  <div class="f ph">Type something...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <p class="caption">The underline slides between tabs; the accent is a two-stop gradient you can set from either end.</p>
+  </section>
+
+  <!-- ================= EMBER ================= -->
+  <section class="spec">
+    <div class="spec-head">
+      <span class="spec-name">Ember</span>
+      <span class="spec-file">ember.lua</span>
+      <span class="spec-tag">Industrial · terminal</span>
+    </div>
+
+    <dl class="spec-facts">
+      <div class="fact"><dt>Accent</dt><dd>Amber</dd></div>
+      <div class="fact"><dt>Navigation</dt><dd>Segmented pills</dd></div>
+      <div class="fact"><dt>Corner radius</dt><dd>4–6 px</dd></div>
+      <div class="fact"><dt>Fonts</dt><dd>RobotoMono · Oswald</dd></div>
+      <div class="fact"><dt>Toggle key</dt><dd>Insert</dd></div>
+    </dl>
+
+    <div class="swatches">
+      <div class="sw"><div class="sw-chip" style="background:#0B0A09"></div><div class="sw-meta"><div class="sw-name">Background</div><div class="sw-hex">#0B0A09</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#181514"></div><div class="sw-meta"><div class="sw-name">Group</div><div class="sw-hex">#181514</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#211D1B"></div><div class="sw-meta"><div class="sw-name">Element</div><div class="sw-hex">#211D1B</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#2E2926"></div><div class="sw-meta"><div class="sw-name">Border</div><div class="sw-hex">#2E2926</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#FF9A3C"></div><div class="sw-meta"><div class="sw-name">Accent</div><div class="sw-hex">#FF9A3C</div></div></div>
+      <div class="sw"><div class="sw-chip" style="background:#FFCF6B"></div><div class="sw-meta"><div class="sw-name">Accent soft</div><div class="sw-hex">#FFCF6B</div></div></div>
+    </div>
+
+    <div class="stage"><div class="stage-inner">
+      <div class="win emb emb-wrap">
+        <div class="head">
+          <i></i><b>EMBER</b>
+          <div class="wbtns"><span>_</span><span>X</span></div>
+        </div>
+        <div class="nav">
+          <span class="on">MAIN</span><span>COMPONENTS</span><span>THEME</span><span>SETTINGS</span>
+        </div>
+        <div class="cols">
+          <div class="col">
+            <div>
+              <div class="gh"><i></i><span>OVERVIEW</span><u></u></div>
+              <div class="gb">
+                <div class="lbl">Industrial interface library.</div>
+                <div class="lbl">Monospace, amber, bracketed values.</div>
+                <div class="btn hot">Send test notification</div>
+              </div>
+            </div>
+            <div>
+              <div class="gh"><i></i><span>SESSION</span><u></u></div>
+              <div class="gb">
+                <div class="lbl">user&nbsp;&nbsp; Builderman</div>
+                <div class="lbl">place&nbsp; 4483381587</div>
+              </div>
+            </div>
+          </div>
+          <div class="col">
+            <div>
+              <div class="gh"><i></i><span>ELEMENTS</span><u></u></div>
+              <div class="gb">
+                <div class="tg on"><i></i>Example toggle</div>
+                <div class="tg"><i></i>Second toggle</div>
+                <div class="sl">
+                  <div class="t"><span>Example slider</span><b>[74]</b></div>
+                  <div class="tr"><i style="width:74%"></i><u style="left:74%"></u></div>
+                </div>
+                <div class="sl">
+                  <div class="t"><span>Decimal slider</span><b>[14.2]</b></div>
+                  <div class="tr"><i style="width:47%"></i><u style="left:47%"></u></div>
+                </div>
+                <div class="kb"><span>Example keybind</span><b>[H]</b></div>
+              </div>
+            </div>
+            <div>
+              <div class="gh"><i></i><span>SELECTION</span><u></u></div>
+              <div class="gb">
+                <div class="in">
+                  <div class="lbl" style="margin:0">Example dropdown</div>
+                  <div class="f"><span>Alpha</span><span class="ar">+</span></div>
+                </div>
+                <div class="in">
+                  <div class="lbl" style="margin:0">Example textbox</div>
+                  <div class="f ph"><em>&gt;</em><span>type here...</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="foot">
+          <i></i>ready<u>21:04:33 &nbsp;|&nbsp; Builderman</u>
+        </div>
+      </div>
+    </div></div>
+    <p class="caption">Values are bracketed and the footer carries a live clock and a scriptable status line.</p>
+  </section>
+
+  <!-- ================= LOADERS ================= -->
+  <section class="spec">
+    <div class="spec-head">
+      <span class="spec-name">Welcome screens</span>
+      <span class="spec-file">all three</span>
+      <span class="spec-tag">Shown before load</span>
+    </div>
+    <p style="color:var(--ink-dim); margin:16px 0 0; max-width:62ch;">
+      Each library opens on a welcome card instead of the menu. Nothing builds until
+      <strong style="color:var(--ink)">LOAD</strong> is pressed; the progress bar then steps through four
+      stages and the card collapses as the main window scales in. Frozen here mid-sequence.
+    </p>
+
+    <div class="loaders">
+      <div class="ld ld-obs">
+        <h4>obsidian<span>.ui</span></h4>
+        <div class="sub">welcome back, Builderman</div>
+        <div class="rule"></div>
+        <div class="st">building components</div>
+        <div class="bar"><i></i></div>
+        <div class="go">L O A D</div>
+      </div>
+
+      <div class="ld ld-ame">
+        <div class="strip"></div>
+        <div class="pad">
+          <h4>Amethyst</h4>
+          <div class="sub">Welcome back, Builderman</div>
+          <div class="strow"><span>Building components</span><b>55%</b></div>
+          <div class="bar"><i></i></div>
+          <div class="go">LOAD</div>
+        </div>
+      </div>
+
+      <div class="ld ld-emb">
+        <div class="stripe"></div>
+        <div class="pad">
+          <h4>EMBER</h4>
+          <div class="sub">&gt; welcome back, Builderman</div>
+          <div class="log">
+            <div>&nbsp;&nbsp;initialising interface</div>
+            <div class="now">&nbsp;&nbsp;building components</div>
+          </div>
+          <div class="bar"><i></i></div>
+          <div class="go">[ LOAD ]</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="foot-note">
+    <h3>Using them</h3>
+    <p>
+      Execute any file as-is and you get the demo above. Each one ends with a marked
+      <code>DEMO BUILD</code> block — delete it and you have a bare library, then build your own
+      menu with <code>Window:AddTab</code> and <code>AddToggle</code> / <code>AddSlider</code> /
+      <code>AddDropdown</code> / <code>AddKeybind</code> / <code>AddColorpicker</code> and the rest.
+      Every element takes a <code>Callback</code>, which is where your own functions attach.
+    </p>
+    <p>
+      Colours live in a registry rather than being baked into each instance, so the
+      colourpickers on the Theme tab retint the entire interface while it is running.
+    </p>
+  </footer>
+
+</div>
