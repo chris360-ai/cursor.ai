@@ -1,19 +1,24 @@
 --[[
-    AMETHYST UI  —  v1.0
+    AMETHYST UI  —  v1.1
     A soft, modern Roblox interface library.
 
     Identity : deep violet-black surfaces, rounded cards, gradient accents,
-               horizontal tab bar with a sliding underline, pill switches.
+               left sidebar navigation with a sliding gradient rail,
+               pill switches, Nunito throughout.
 
     Usage:
         local Amethyst = loadstring(game:HttpGet("<raw url>"))()
-        local Window = Amethyst:CreateWindow({ Title = "Amethyst", SubTitle = "v1.0" })
+        local Window = Amethyst:CreateWindow({ Title = "Amethyst", SubTitle = "v1.1" })
         local Tab    = Window:AddTab("Main")
         local Card   = Tab:AddCard("General", "left")
         Card:AddToggle({ Text = "Enabled", Callback = function(v) end })
 
     Every element accepts a Callback. Attach your own functions there.
     Toggle the interface with RightControl (configurable).
+
+    CHANGES IN v1.1
+      - navigation moved from a top tab bar to a left sidebar
+      - typeface switched from Gotham to Nunito (see FAMILY below)
 ]]
 
 --=========================================================================--
@@ -25,6 +30,51 @@ local UserInputService = game:GetService("UserInputService")
 local Players          = game:GetService("Players")
 
 local LocalPlayer = Players.LocalPlayer
+
+--=========================================================================--
+--  FONT
+--  Change FAMILY to restyle the entire interface in one line. Families
+--  that suit this design, all shipped with Roblox:
+--
+--      "Nunito"        rounded and soft            (default)
+--      "JosefinSans"   geometric, elegant, airy
+--      "Ubuntu"        humanist, slightly quirky
+--      "Montserrat"    wide geometric
+--      "TitilliumWeb"  technical
+--      "GothamSSm"     the previous look
+--
+--  Numeric values use MONO so digits stay aligned in columns.
+--=========================================================================--
+
+local FAMILY = "Nunito"
+local MONO   = "RobotoMono"
+
+local function fontEnum(name, fallback)
+    local ok, f = pcall(function() return Enum.Font[name] end)
+    if ok and f then return f end
+    return Enum.Font[fallback or "SourceSans"]
+end
+
+-- Modern clients support weighted FontFace; older ones fall back to the enum.
+local function fontFace(family, weight)
+    local ok, f = pcall(function()
+        return Font.new("rbxasset://fonts/families/" .. family .. ".json",
+                        weight or Enum.FontWeight.Regular)
+    end)
+    if ok and typeof(f) == "Font" then return f end
+    return nil
+end
+
+local F = {
+    Label = { face = fontFace(FAMILY, Enum.FontWeight.Regular),
+              enum = fontEnum(FAMILY, "SourceSans") },
+    Head  = { face = fontFace(FAMILY, Enum.FontWeight.SemiBold),
+              enum = fontEnum(FAMILY, "SourceSansSemibold") },
+    Bold  = { face = fontFace(FAMILY, Enum.FontWeight.Bold),
+              enum = fontEnum(FAMILY, "SourceSansBold") },
+    Mono  = { face = fontFace(MONO, Enum.FontWeight.Regular),
+              enum = fontEnum(MONO, "Code") },
+}
 
 --=========================================================================--
 --  THEME
@@ -45,16 +95,14 @@ local Theme = {
     Risk         = Color3.fromRGB(244,  93, 118),
 }
 
-local Registry = {}
+local Registry  = {}
+local Gradients = {}
 
 local function reg(inst, prop, key)
     table.insert(Registry, { inst = inst, prop = prop, key = key })
     inst[prop] = Theme[key]
     return inst
 end
-
--- Gradient instances re-tint through their own list
-local Gradients = {}
 
 local function regGradient(g)
     table.insert(Gradients, g)
@@ -81,31 +129,27 @@ local function retint(key, color)
 end
 
 --=========================================================================--
---  FONTS
---=========================================================================--
-
-local function font(name, fallback)
-    local ok, f = pcall(function() return Enum.Font[name] end)
-    if ok and f then return f end
-    return Enum.Font[fallback or "SourceSans"]
-end
-
-local F = {
-    Label = font("Gotham", "SourceSans"),
-    Head  = font("GothamMedium", "SourceSansSemibold"),
-    Bold  = font("GothamBold", "SourceSansBold"),
-    Mono  = font("RobotoMono", "Code"),
-}
-
---=========================================================================--
 --  HELPERS
 --=========================================================================--
 
 local function new(class, props, children)
     local inst = Instance.new(class)
-    local parent
+    local parent, fontSpec
     for k, v in pairs(props or {}) do
-        if k == "Parent" then parent = v else inst[k] = v end
+        if k == "Parent" then
+            parent = v
+        elseif k == "Font" and type(v) == "table" then
+            fontSpec = v
+        else
+            inst[k] = v
+        end
+    end
+    if fontSpec then
+        local applied = false
+        if fontSpec.face then
+            applied = pcall(function() inst.FontFace = fontSpec.face end)
+        end
+        if not applied then inst.Font = fontSpec.enum end
     end
     for _, c in ipairs(children or {}) do c.Parent = inst end
     if parent then inst.Parent = parent end
@@ -229,12 +273,11 @@ function Amethyst:Notify(title, body, duration)
     reg(inner, "BackgroundColor3", "Panel")
 
     local bar = new("Frame", {
-        Position        = UDim2.new(0, 0, 0, 0),
-        Size            = UDim2.new(0, 3, 1, 0),
-        BorderSizePixel = 0,
-        Parent          = inner,
+        Size             = UDim2.new(0, 3, 1, 0),
+        BackgroundColor3 = Color3.new(1, 1, 1),
+        BorderSizePixel  = 0,
+        Parent           = inner,
     }, { corner(2), regGradient(new("UIGradient", { Rotation = 90 })) })
-    bar.BackgroundColor3 = Color3.new(1, 1, 1)
 
     local t = new("TextLabel", {
         Position               = UDim2.new(0, 14, 0, body and 8 or 0),
@@ -242,7 +285,7 @@ function Amethyst:Notify(title, body, duration)
         BackgroundTransparency = 1,
         Font                   = F.Head,
         Text                   = tostring(title),
-        TextSize               = 13,
+        TextSize               = 14,
         TextXAlignment         = Enum.TextXAlignment.Left,
         TextTruncate           = Enum.TextTruncate.AtEnd,
         Parent                 = inner,
@@ -257,7 +300,7 @@ function Amethyst:Notify(title, body, duration)
             BackgroundTransparency = 1,
             Font                   = F.Label,
             Text                   = tostring(body),
-            TextSize               = 12,
+            TextSize               = 13,
             TextXAlignment         = Enum.TextXAlignment.Left,
             TextTruncate           = Enum.TextTruncate.AtEnd,
             Parent                 = inner,
@@ -284,9 +327,11 @@ end
 function Amethyst:CreateWindow(cfg)
     cfg = cfg or {}
     local title     = cfg.Title     or "Amethyst"
-    local subTitle  = cfg.SubTitle  or "v1.0"
-    local size      = cfg.Size      or UDim2.new(0, 720, 0, 490)
+    local subTitle  = cfg.SubTitle  or "v1.1"
+    local size      = cfg.Size      or UDim2.new(0, 760, 0, 500)
     local toggleKey = cfg.ToggleKey or Enum.KeyCode.RightControl
+
+    local SIDEBAR_W = 156
 
     local Main = new("Frame", {
         Name             = "Window",
@@ -304,12 +349,12 @@ function Amethyst:CreateWindow(cfg)
     -- Header
     ------------------------------------------------------------------
     local Header = new("Frame", {
-        Size                   = UDim2.new(1, 0, 0, 52),
+        Size                   = UDim2.new(1, 0, 0, 56),
         BackgroundTransparency = 1,
         Parent                 = Main,
     })
 
-    local dot = new("Frame", {
+    new("Frame", {
         AnchorPoint      = Vector2.new(0, 0.5),
         Position         = UDim2.new(0, 18, 0.5, 0),
         Size             = UDim2.new(0, 10, 0, 10),
@@ -319,24 +364,24 @@ function Amethyst:CreateWindow(cfg)
     }, { corner(5), regGradient(new("UIGradient", { Rotation = 45 })) })
 
     local brand = new("TextLabel", {
-        Position               = UDim2.new(0, 36, 0, 12),
-        Size                   = UDim2.new(0, 200, 0, 16),
+        Position               = UDim2.new(0, 36, 0, 14),
+        Size                   = UDim2.new(0, 220, 0, 17),
         BackgroundTransparency = 1,
         Font                   = F.Bold,
         Text                   = title,
-        TextSize               = 15,
+        TextSize               = 16,
         TextXAlignment         = Enum.TextXAlignment.Left,
         Parent                 = Header,
     })
     reg(brand, "TextColor3", "Text")
 
     local sub = new("TextLabel", {
-        Position               = UDim2.new(0, 36, 0, 28),
-        Size                   = UDim2.new(0, 240, 0, 14),
+        Position               = UDim2.new(0, 36, 0, 31),
+        Size                   = UDim2.new(0, 260, 0, 14),
         BackgroundTransparency = 1,
         Font                   = F.Label,
         Text                   = subTitle,
-        TextSize               = 11,
+        TextSize               = 12,
         TextXAlignment         = Enum.TextXAlignment.Left,
         Parent                 = Header,
     })
@@ -376,39 +421,56 @@ function Amethyst:CreateWindow(cfg)
     headBtn("–", 46, "Accent", function()
         minimized = not minimized
         tween(Main, TW_SOFT, {
-            Size = minimized and UDim2.new(0, fullSize.X.Offset, 0, 88) or fullSize
+            Size = minimized and UDim2.new(0, fullSize.X.Offset, 0, 56) or fullSize
         })
     end)
 
-    ------------------------------------------------------------------
-    -- Tab bar with sliding gradient underline
-    ------------------------------------------------------------------
-    local TabBar = new("Frame", {
-        Position               = UDim2.new(0, 18, 0, 52),
-        Size                   = UDim2.new(1, -36, 0, 34),
-        BackgroundTransparency = 1,
-        Parent                 = Main,
-    }, { list(4, Enum.FillDirection.Horizontal) })
-
-    local underline = new("Frame", {
-        Position         = UDim2.new(0, 18, 0, 85),
-        Size             = UDim2.new(0, 0, 0, 2),
-        BackgroundColor3 = Color3.new(1, 1, 1),
-        BorderSizePixel  = 0,
-        Parent           = Main,
-    }, { corner(1), regGradient(new("UIGradient", {})) })
-
-    local barLine = new("Frame", {
-        Position        = UDim2.new(0, 0, 0, 86),
+    local headLine = new("Frame", {
+        Position        = UDim2.new(0, 0, 0, 56),
         Size            = UDim2.new(1, 0, 0, 1),
         BorderSizePixel = 0,
         Parent          = Main,
     })
-    reg(barLine, "BackgroundColor3", "Border")
+    reg(headLine, "BackgroundColor3", "Border")
+
+    ------------------------------------------------------------------
+    -- Left sidebar  (navigation lives here now)
+    ------------------------------------------------------------------
+    local Sidebar = new("Frame", {
+        Position               = UDim2.new(0, 0, 0, 57),
+        Size                   = UDim2.new(0, SIDEBAR_W, 1, -57),
+        BackgroundTransparency = 1,
+        Parent                 = Main,
+    })
+
+    -- sliding gradient rail, flush to the window edge
+    local rail = new("Frame", {
+        AnchorPoint      = Vector2.new(0, 0.5),
+        Position         = UDim2.new(0, 0, 0, 0),
+        Size             = UDim2.new(0, 3, 0, 0),
+        BackgroundColor3 = Color3.new(1, 1, 1),
+        BorderSizePixel  = 0,
+        ZIndex           = 4,
+        Parent           = Sidebar,
+    }, { corner(2), regGradient(new("UIGradient", { Rotation = 90 })) })
+
+    local SideList = new("Frame", {
+        Size                   = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        Parent                 = Sidebar,
+    }, { list(4), pad(14, 14, 12, 12) })
+
+    local sideLine = new("Frame", {
+        Position        = UDim2.new(0, SIDEBAR_W, 0, 57),
+        Size            = UDim2.new(0, 1, 1, -57),
+        BorderSizePixel = 0,
+        Parent          = Main,
+    })
+    reg(sideLine, "BackgroundColor3", "Border")
 
     local Content = new("Frame", {
-        Position               = UDim2.new(0, 0, 0, 87),
-        Size                   = UDim2.new(1, 0, 1, -87),
+        Position               = UDim2.new(0, SIDEBAR_W + 1, 0, 57),
+        Size                   = UDim2.new(1, -(SIDEBAR_W + 1), 1, -57),
         BackgroundTransparency = 1,
         ClipsDescendants       = true,
         Parent                 = Main,
@@ -452,16 +514,36 @@ function Amethyst:CreateWindow(cfg)
         local Tab = {}
 
         local btn = new("TextButton", {
-            Size                   = UDim2.new(0, 0, 1, 0),
-            AutomaticSize          = Enum.AutomaticSize.X,
+            Size                   = UDim2.new(1, 0, 0, 34),
             BackgroundTransparency = 1,
             AutoButtonColor        = false,
+            Text                   = "",
+            Parent                 = SideList,
+        }, { corner(7) })
+        reg(btn, "BackgroundColor3", "Element")
+
+        -- low-opacity gradient wash over the active pill
+        local wash = new("Frame", {
+            Size                   = UDim2.new(1, 0, 1, 0),
+            BackgroundColor3       = Color3.new(1, 1, 1),
+            BackgroundTransparency = 1,
+            BorderSizePixel        = 0,
+            Parent                 = btn,
+        }, { corner(7), regGradient(new("UIGradient", {})) })
+
+        local lbl = new("TextLabel", {
+            Position               = UDim2.new(0, 14, 0, 0),
+            Size                   = UDim2.new(1, -20, 1, 0),
+            BackgroundTransparency = 1,
             Font                   = F.Head,
             Text                   = name,
             TextSize               = 13,
-            Parent                 = TabBar,
-        }, { pad(0, 0, 14, 14) })
-        reg(btn, "TextColor3", "TextDim")
+            TextXAlignment         = Enum.TextXAlignment.Left,
+            TextTruncate           = Enum.TextTruncate.AtEnd,
+            ZIndex                 = 3,
+            Parent                 = btn,
+        })
+        reg(lbl, "TextColor3", "TextDim")
 
         local page = new("ScrollingFrame", {
             Size                   = UDim2.new(1, 0, 1, 0),
@@ -498,29 +580,42 @@ function Amethyst:CreateWindow(cfg)
         }, { list(12) })
 
         btn.MouseEnter:Connect(function()
-            if activeTab ~= Tab then btn.TextColor3 = Theme.Text end
+            if activeTab ~= Tab then
+                lbl.TextColor3 = Theme.Text
+                tween(btn, TW_FAST, { BackgroundTransparency = 0.55 })
+            end
         end)
         btn.MouseLeave:Connect(function()
-            if activeTab ~= Tab then btn.TextColor3 = Theme.TextDim end
+            if activeTab ~= Tab then
+                lbl.TextColor3 = Theme.TextDim
+                tween(btn, TW_FAST, { BackgroundTransparency = 1 })
+            end
         end)
 
         function Tab:Select()
             for _, t in ipairs(Window.Tabs) do t._deselect() end
             activeTab      = Tab
             page.Visible   = true
-            btn.TextColor3 = Theme.Text
+            lbl.TextColor3 = Theme.Text
+            tween(btn,  TW_FAST, { BackgroundTransparency = 0 })
+            tween(wash, TW_SOFT, { BackgroundTransparency = 0.86 })
+
+            -- slide the rail onto this tab
             task.defer(function()
-                local x = btn.AbsolutePosition.X - TabBar.AbsolutePosition.X + 18
-                tween(underline, TW_SOFT, {
-                    Position = UDim2.new(0, x, 0, 85),
-                    Size     = UDim2.new(0, btn.AbsoluteSize.X, 0, 2),
+                local y = btn.AbsolutePosition.Y - Sidebar.AbsolutePosition.Y
+                          + btn.AbsoluteSize.Y / 2
+                tween(rail, TW_SOFT, {
+                    Position = UDim2.new(0, 0, 0, y),
+                    Size     = UDim2.new(0, 3, 0, 20),
                 })
             end)
         end
 
         function Tab._deselect()
             page.Visible   = false
-            btn.TextColor3 = Theme.TextDim
+            lbl.TextColor3 = Theme.TextDim
+            tween(btn,  TW_FAST, { BackgroundTransparency = 1 })
+            tween(wash, TW_FAST, { BackgroundTransparency = 1 })
         end
 
         btn.MouseButton1Click:Connect(function() Tab:Select() end)
@@ -538,7 +633,6 @@ function Amethyst:CreateWindow(cfg)
                 Parent                 = parentCol,
             }, { list(8) })
 
-            -- header row: gradient tick + title
             local head = new("Frame", {
                 Size                   = UDim2.new(1, 0, 0, 16),
                 BackgroundTransparency = 1,
@@ -546,7 +640,7 @@ function Amethyst:CreateWindow(cfg)
                 Parent                 = wrap,
             })
 
-            local tick = new("Frame", {
+            new("Frame", {
                 AnchorPoint      = Vector2.new(0, 0.5),
                 Position         = UDim2.new(0, 0, 0.5, 0),
                 Size             = UDim2.new(0, 3, 0, 12),
@@ -561,7 +655,7 @@ function Amethyst:CreateWindow(cfg)
                 BackgroundTransparency = 1,
                 Font                   = F.Head,
                 Text                   = cardTitle,
-                TextSize               = 12,
+                TextSize               = 13,
                 TextXAlignment         = Enum.TextXAlignment.Left,
                 Parent                 = head,
             })
@@ -588,13 +682,13 @@ function Amethyst:CreateWindow(cfg)
 
             ----------------------------------------------------------
             function Card:AddLabel(text)
-                local r = row(16)
+                local r = row(17)
                 local l = new("TextLabel", {
                     Size                   = UDim2.new(1, 0, 1, 0),
                     BackgroundTransparency = 1,
                     Font                   = F.Label,
                     Text                   = text,
-                    TextSize               = 12,
+                    TextSize               = 13,
                     TextXAlignment         = Enum.TextXAlignment.Left,
                     TextWrapped            = true,
                     Parent                 = r,
@@ -630,7 +724,7 @@ function Amethyst:CreateWindow(cfg)
                     Parent                 = r,
                 })
 
-                local lbl = new("TextLabel", {
+                local lbl2 = new("TextLabel", {
                     Size                   = UDim2.new(1, -46, 1, 0),
                     BackgroundTransparency = 1,
                     Font                   = F.Label,
@@ -639,7 +733,7 @@ function Amethyst:CreateWindow(cfg)
                     TextXAlignment         = Enum.TextXAlignment.Left,
                     Parent                 = btn2,
                 })
-                reg(lbl, "TextColor3", "TextDim")
+                reg(lbl2, "TextColor3", "TextDim")
 
                 local track = new("Frame", {
                     AnchorPoint     = Vector2.new(1, 0.5),
@@ -678,7 +772,7 @@ function Amethyst:CreateWindow(cfg)
                         BackgroundColor3 = state and Color3.new(1, 1, 1) or Color3.fromRGB(180, 172, 200),
                     })
                     tween(trackFill, TW_FAST, { BackgroundTransparency = state and 0 or 1 })
-                    lbl.TextColor3 = state and Theme.Text or Theme.TextDim
+                    lbl2.TextColor3 = state and Theme.Text or Theme.TextDim
                     if not silent and o.Callback then task.spawn(o.Callback, state) end
                 end
 
@@ -686,10 +780,10 @@ function Amethyst:CreateWindow(cfg)
 
                 btn2.MouseButton1Click:Connect(function() api:Set(not state) end)
                 btn2.MouseEnter:Connect(function()
-                    if not state then lbl.TextColor3 = Theme.Text end
+                    if not state then lbl2.TextColor3 = Theme.Text end
                 end)
                 btn2.MouseLeave:Connect(function()
-                    if not state then lbl.TextColor3 = Theme.TextDim end
+                    if not state then lbl2.TextColor3 = Theme.TextDim end
                 end)
 
                 api:Set(state, true)
@@ -697,7 +791,7 @@ function Amethyst:CreateWindow(cfg)
             end
 
             ----------------------------------------------------------
-            --  SLIDER  (rounded track, gradient fill, circular knob)
+            --  SLIDER
             ----------------------------------------------------------
             function Card:AddSlider(o)
                 o = o or {}
@@ -708,7 +802,7 @@ function Amethyst:CreateWindow(cfg)
 
                 local r = row(38)
 
-                local lbl = new("TextLabel", {
+                local lbl3 = new("TextLabel", {
                     Size                   = UDim2.new(1, -80, 0, 16),
                     BackgroundTransparency = 1,
                     Font                   = F.Label,
@@ -717,7 +811,7 @@ function Amethyst:CreateWindow(cfg)
                     TextXAlignment         = Enum.TextXAlignment.Left,
                     Parent                 = r,
                 })
-                reg(lbl, "TextColor3", "TextDim")
+                reg(lbl3, "TextColor3", "TextDim")
 
                 local valBox = new("Frame", {
                     AnchorPoint     = Vector2.new(1, 0),
@@ -810,7 +904,7 @@ function Amethyst:CreateWindow(cfg)
             end
 
             ----------------------------------------------------------
-            --  BUTTON  (gradient fill on hover)
+            --  BUTTON
             ----------------------------------------------------------
             function Card:AddButton(o)
                 o = o or {}
@@ -837,7 +931,7 @@ function Amethyst:CreateWindow(cfg)
                     BackgroundTransparency = 1,
                     Font                   = F.Head,
                     Text                   = o.Text or "Button",
-                    TextSize               = 12,
+                    TextSize               = 13,
                     ZIndex                 = 3,
                     Parent                 = b,
                 })
@@ -892,7 +986,7 @@ function Amethyst:CreateWindow(cfg)
                     Font                   = F.Label,
                     Text                   = o.Default or "",
                     PlaceholderText        = o.Placeholder or "...",
-                    TextSize               = 12,
+                    TextSize               = 13,
                     TextXAlignment         = Enum.TextXAlignment.Left,
                     ClearTextOnFocus       = false,
                     Parent                 = holder,
@@ -956,7 +1050,7 @@ function Amethyst:CreateWindow(cfg)
                     BackgroundTransparency = 1,
                     Font                   = F.Label,
                     Text                   = "",
-                    TextSize               = 12,
+                    TextSize               = 13,
                     TextXAlignment         = Enum.TextXAlignment.Left,
                     TextTruncate           = Enum.TextTruncate.AtEnd,
                     Parent                 = head2,
@@ -970,7 +1064,7 @@ function Amethyst:CreateWindow(cfg)
                     BackgroundTransparency = 1,
                     Font                   = F.Label,
                     Text                   = "v",
-                    TextSize               = 11,
+                    TextSize               = 12,
                     Parent                 = head2,
                 })
                 reg(arrow, "TextColor3", "TextDim")
@@ -1009,7 +1103,7 @@ function Amethyst:CreateWindow(cfg)
                             BorderSizePixel = 0,
                             Font            = F.Label,
                             Text            = "   " .. tostring(opt),
-                            TextSize         = 12,
+                            TextSize        = 13,
                             TextXAlignment  = Enum.TextXAlignment.Left,
                             Parent          = listHolder,
                         }, { corner(5) })
@@ -1331,7 +1425,6 @@ function Amethyst:CreateWindow(cfg)
     }, { corner(14), stroke("Border") })
     reg(Welcome, "BackgroundColor3", "Background")
 
-    -- gradient banner strip
     local banner = new("Frame", {
         Size                   = UDim2.new(1, 0, 0, 3),
         BackgroundColor3       = Color3.new(1, 1, 1),
@@ -1342,35 +1435,36 @@ function Amethyst:CreateWindow(cfg)
 
     local wTitle = new("TextLabel", {
         Position               = UDim2.new(0, 0, 0, 46),
-        Size                   = UDim2.new(1, 0, 0, 28),
+        Size                   = UDim2.new(1, 0, 0, 30),
         BackgroundTransparency = 1,
         Font                   = F.Bold,
         Text                   = title,
-        TextSize               = 26,
+        TextSize               = 27,
         TextTransparency       = 1,
         Parent                 = Welcome,
     })
     reg(wTitle, "TextColor3", "Text")
 
     local wSub = new("TextLabel", {
-        Position               = UDim2.new(0, 0, 0, 76),
+        Position               = UDim2.new(0, 0, 0, 78),
         Size                   = UDim2.new(1, 0, 0, 16),
         BackgroundTransparency = 1,
         Font                   = F.Label,
         Text                   = "Welcome back, " .. (LocalPlayer and LocalPlayer.DisplayName or "guest"),
-        TextSize               = 13,
+        TextSize               = 14,
         TextTransparency       = 1,
         Parent                 = Welcome,
     })
     reg(wSub, "TextColor3", "TextDim")
 
     local wStatus = new("TextLabel", {
-        Position               = UDim2.new(0, 0, 0, 118),
-        Size                   = UDim2.new(1, 0, 0, 14),
+        Position               = UDim2.new(0, 50, 0, 118),
+        Size                   = UDim2.new(1, -140, 0, 14),
         BackgroundTransparency = 1,
-        Font                   = F.Mono,
+        Font                   = F.Label,
         Text                   = "",
-        TextSize               = 11,
+        TextSize               = 12,
+        TextXAlignment         = Enum.TextXAlignment.Left,
         TextTransparency       = 1,
         Parent                 = Welcome,
     })
@@ -1433,7 +1527,7 @@ function Amethyst:CreateWindow(cfg)
         BackgroundTransparency = 1,
         Font                   = F.Bold,
         Text                   = "LOAD",
-        TextSize               = 13,
+        TextSize               = 14,
         TextTransparency       = 1,
         ZIndex                 = 3,
         Parent                 = wBtn,
@@ -1465,13 +1559,13 @@ function Amethyst:CreateWindow(cfg)
         loaded = true
         wBtn.Active = false
 
-        tween(wBtn,    TW_FAST, { BackgroundTransparency = 1 })
-        tween(wBtnGrad,TW_FAST, { BackgroundTransparency = 1 })
-        tween(wBtnLbl, TW_FAST, { TextTransparency = 1 })
-        tween(wBarBg,  TW_FAST, { BackgroundTransparency = 0 })
-        tween(wBar,    TW_FAST, { BackgroundTransparency = 0 })
-        tween(wStatus, TW_FAST, { TextTransparency = 0 })
-        tween(wPct,    TW_FAST, { TextTransparency = 0 })
+        tween(wBtn,     TW_FAST, { BackgroundTransparency = 1 })
+        tween(wBtnGrad, TW_FAST, { BackgroundTransparency = 1 })
+        tween(wBtnLbl,  TW_FAST, { TextTransparency = 1 })
+        tween(wBarBg,   TW_FAST, { BackgroundTransparency = 0 })
+        tween(wBar,     TW_FAST, { BackgroundTransparency = 0 })
+        tween(wStatus,  TW_FAST, { TextTransparency = 0 })
+        tween(wPct,     TW_FAST, { TextTransparency = 0 })
 
         local steps = {
             { "Initialising interface", 0.25 },
@@ -1512,8 +1606,8 @@ end
 
 local Window = Amethyst:CreateWindow({
     Title     = "Amethyst",
-    SubTitle  = "interface library  •  v1.0",
-    Size      = UDim2.new(0, 720, 0, 490),
+    SubTitle  = "interface library  •  v1.1",
+    Size      = UDim2.new(0, 760, 0, 500),
     ToggleKey = Enum.KeyCode.RightControl,
     OnLoad    = function()
         Amethyst:Notify("Loaded", "Press RightControl to toggle the interface.", 4)
