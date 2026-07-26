@@ -138,7 +138,9 @@ def qstr(v):
         elif 32 <= o < 127:
             out.append(ch)
         else:
-            out.append('\\%d' % (o & 0xFF))
+            # always 3 digits: "\2" followed by a literal '3' would otherwise
+            # re-parse as "\23" (Lua consumes up to three decimal digits)
+            out.append('\\%03d' % (o & 0xFF))
     out.append('"')
     return ''.join(out)
 
@@ -157,7 +159,16 @@ def beautify(src, max_str=90):
     def flush():
         nonlocal cur
         if cur:
-            lines.append('  ' * max(ind, 0) + ''.join(cur).strip())
+            text = ''.join(cur).strip()
+            # A statement starting with '(' would otherwise be glued to the
+            # previous line and parsed as a call: "a=f" + "(x)()".  Lua's own
+            # disambiguator is a leading semicolon.
+            if text.startswith('(') and lines:
+                prev = lines[-1].rstrip()
+                if prev and prev[-1] not in '(,={[' and \
+                        not prev.endswith(('do', 'then', 'else', 'repeat')):
+                    text = ';' + text
+            lines.append('  ' * max(ind, 0) + text)
             cur = []
 
     i = 0
@@ -199,7 +210,10 @@ def beautify(src, max_str=90):
                 depth = 0
                 while j < n:
                     tv = toks[j]
-                    cur.append(('' if tv.val in ')' else '') + tv.val)
+                    # a named function needs the space: "function iP(" not
+                    # "functioniP("; dotted/colon names and '(' glue directly
+                    sep = ' ' if (depth == 0 and tv.kind == 'name') else ''
+                    cur.append(sep + tv.val)
                     if tv.val == '(':
                         depth += 1
                     elif tv.val == ')':
